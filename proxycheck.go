@@ -80,7 +80,9 @@ func (prox *Prox) writeTProx() (err error) { // {{{
 	return
 } // }}}
 
-func (prox *Prox) synProx() {
+// ========== syn prox
+
+func (prox *Prox) synProx() { // {{{
 	prox.Lock()
 	defer prox.Unlock()
 	for _, proxy := range prox.list {
@@ -91,21 +93,28 @@ func (prox *Prox) synProx() {
 			conn.Close()
 		}
 	}
+} // }}}
 
-}
+// ========== asyn prox
 
-func (prox *Prox) asynProx(num int) { // {{{
+func (prox *Prox) asynProx() { // {{{
+	for i := 0; i < len(prox.list); i++ {
+		go prox.Dial(i)
+	}
+} // }}}
+
+func (prox *Prox) Dial(num int) { // {{{
 	prox.Lock()
 	defer prox.Unlock()
 	conn, err := net.DialTimeout("tcp", prox.list[num], 1*time.Second)
+	fmt.Print(err)
 	if err == nil {
 		defer conn.Close()
 		prox.tlist = append(prox.tlist, &prox.list[num])
-	} else {
-		fmt.Printf("\nerr: %v, proxy not available \n", err)
 	}
-
 } // }}}
+
+// ========== request throught proxy
 
 func request(proxy string, req_url string) (response *http.Response, err error) { //{{{
 	proxyUrl, err := url.Parse(proxy)
@@ -130,7 +139,7 @@ func main() {
 		return
 	}
 
-	prox.synProx()
+	prox.asynProx()
 	fmt.Print(prox.tlist)
 
 	var input string
