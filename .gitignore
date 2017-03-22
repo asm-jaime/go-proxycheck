@@ -1,7 +1,11 @@
 # ignore my proxyes
+data/test_prox.txt
+data/test_tprox.txt
 data/prox.txt
 data/tprox.txt
 
+data/res.prox.txt
+data/res.tprox.txt
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
 *.a

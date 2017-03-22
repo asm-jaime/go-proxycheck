@@ -38,6 +38,9 @@ func (prox *Prox) readProx() (err error) { // {{{
 } // }}}
 
 func (prox *Prox) writeTProx() (err error) { // {{{
+	prox.Lock()
+	defer prox.Unlock()
+
 	fmt.Println("====================")
 	fmt.Println("start to write reachable proxy list")
 	fmt.Println("====================")
@@ -61,8 +64,9 @@ func (prox *Prox) writeTProx() (err error) { // {{{
 	defer file.Close()
 
 	// write proxy list to file
-	for _, proxy := range prox.tlist {
-		_, err = file.WriteString(*proxy + "\n")
+	for i := range prox.tlist {
+		fmt.Println(*prox.tlist[i])
+		_, err = file.WriteString(string(*prox.tlist[i]) + "\r\n")
 		if err != nil {
 			return errors.New("can't write file")
 		}
@@ -82,18 +86,21 @@ func (prox *Prox) writeTProx() (err error) { // {{{
 
 // ========== syn prox
 
-func (prox *Prox) synProx() { // {{{
+func (prox *Prox) synProx() {
 	prox.Lock()
 	defer prox.Unlock()
-	for _, proxy := range prox.list {
+	for i, proxy := range prox.list {
 		conn, err := net.DialTimeout("tcp", proxy, 1*time.Second)
 		fmt.Print(err)
 		if err == nil {
-			prox.tlist = append(prox.tlist, &proxy)
+			// fmt.Printf("\nprx: %v\n num: %v\n", proxy, len(prox.tlist))
+			prox.tlist = append(prox.tlist, new(string))
+			prox.tlist[len(prox.tlist)-1] = &prox.list[i]
+			// fmt.Printf("\nprox[]: %v\n", prox.tlist[len(prox.tlist)])
 			conn.Close()
 		}
 	}
-} // }}}
+}
 
 // ========== asyn prox
 
@@ -139,8 +146,8 @@ func main() {
 		return
 	}
 
-	prox.asynProx()
-	fmt.Print(prox.tlist)
+	prox.synProx()
+	fmt.Printf("\ntlist: %v\n", prox.tlist)
 
 	var input string
 	fmt.Scanln(&input)
