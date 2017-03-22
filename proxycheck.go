@@ -17,13 +17,13 @@ type Prox struct {
 	file  string
 	tfile string
 	list  []string
-	tlist []string
+	tlist []*string
 	sync.RWMutex
 }
 
 func (prox *Prox) setDefault() { // {{{
-	prox.file = "prox.txt"
-	prox.tfile = "tprox.txt"
+	prox.file = "data/prox.txt"
+	prox.tfile = "data/tprox.txt"
 
 } // }}}
 
@@ -62,7 +62,7 @@ func (prox *Prox) writeTProx() (err error) { // {{{
 
 	// write proxy list to file
 	for _, proxy := range prox.tlist {
-		_, err = file.WriteString(proxy + "\n")
+		_, err = file.WriteString(*proxy + "\n")
 		if err != nil {
 			return errors.New("can't write file")
 		}
@@ -80,27 +80,31 @@ func (prox *Prox) writeTProx() (err error) { // {{{
 	return
 } // }}}
 
-func (prox *Prox) synProx() { // {{{
+func (prox *Prox) synProx() {
 	prox.Lock()
 	defer prox.Unlock()
 	for _, proxy := range prox.list {
 		conn, err := net.DialTimeout("tcp", proxy, 1*time.Second)
+		fmt.Print(err)
 		if err == nil {
-			prox.tlist = append(prox.tlist, proxy)
+			prox.tlist = append(prox.tlist, &proxy)
 			conn.Close()
 		}
 	}
 
-} // }}}
+}
 
-func asynProx(prox string, pchan chan string) { // {{{
-	conn, err := net.DialTimeout("tcp", prox, 1*time.Second)
+func (prox *Prox) asynProx(num int) { // {{{
+	prox.Lock()
+	defer prox.Unlock()
+	conn, err := net.DialTimeout("tcp", prox.list[num], 1*time.Second)
 	if err == nil {
 		defer conn.Close()
-		pchan <- prox
+		prox.tlist = append(prox.tlist, &prox.list[num])
+	} else {
+		fmt.Printf("\nerr: %v, proxy not available \n", err)
 	}
-	pchan <- err.Error()
-	close(pchan)
+
 } // }}}
 
 func request(proxy string, req_url string) (response *http.Response, err error) { //{{{
@@ -115,27 +119,19 @@ func request(proxy string, req_url string) (response *http.Response, err error) 
 } // }}}
 
 func main() {
+	// settings
 	prox := Prox{}
+	prox.setDefault()
+
+	// load proxies from file, (prox.txt as default)
 	err := prox.readProx()
 	if err != nil {
-		fmt.Printf("\nerr: %v, no proxy-list..\n", err)
+		fmt.Printf("\nerr: %v, no proxy-list\n", err)
 		return
 	}
 
-	// lenProx := len(proxies)
-
-	pchan := make(chan string, 3)
-
-	//for i := 0; i < lenProx; i++ {
-	//	go asynProx(proxies[i], pchan)
-	//}
-	go asynProx(proxies[0], pchan)
-	go asynProx(proxies[1], pchan)
-	go asynProx(proxies[2], pchan)
-
-	for proxy := range pchan {
-		fmt.Println(proxy)
-	}
+	prox.synProx()
+	fmt.Print(prox.tlist)
 
 	var input string
 	fmt.Scanln(&input)
