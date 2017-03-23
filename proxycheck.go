@@ -18,14 +18,19 @@ type Prox struct {
 	tfile string
 	list  []string
 	tlist []*string
+	urls  []string
 	sync.RWMutex
 }
+
+// ========== configs
 
 func (prox *Prox) setDefault() { // {{{
 	prox.file = "data/prox.txt"
 	prox.tfile = "data/tprox.txt"
 
 } // }}}
+
+// ========== file operations
 
 func (prox *Prox) readProx() (err error) { // {{{
 	file, err := ioutil.ReadFile(prox.file)
@@ -84,23 +89,31 @@ func (prox *Prox) writeTProx() (err error) { // {{{
 	return
 } // }}}
 
+// ========== a prox
+
+func (prox *Prox) oneProx(proxy string) (err error) {
+	conn, err := net.DialTimeout("tcp", proxy, 3*time.Second)
+	if err == nil {
+		defer conn.Close()
+	}
+	return err
+}
+
 // ========== syn prox
 
-func (prox *Prox) synProx() {
+func (prox *Prox) synProx() { // {{{
 	prox.Lock()
 	defer prox.Unlock()
 	for i, proxy := range prox.list {
 		conn, err := net.DialTimeout("tcp", proxy, 1*time.Second)
 		fmt.Print(err)
 		if err == nil {
-			// fmt.Printf("\nprx: %v\n num: %v\n", proxy, len(prox.tlist))
 			prox.tlist = append(prox.tlist, new(string))
 			prox.tlist[len(prox.tlist)-1] = &prox.list[i]
-			// fmt.Printf("\nprox[]: %v\n", prox.tlist[len(prox.tlist)])
 			conn.Close()
 		}
 	}
-}
+} // }}}
 
 // ========== asyn prox
 
@@ -121,18 +134,37 @@ func (prox *Prox) Dial(num int) { // {{{
 	}
 } // }}}
 
-// ========== request throught proxy
+// ========== requests
 
-func request(proxy string, req_url string) (response *http.Response, err error) { //{{{
-	proxyUrl, err := url.Parse(proxy)
-	fmt.Printf("\nurl proxy: %v\n", proxyUrl)
-	client := &http.Client{
-		Timeout:   time.Second * 1,
-		Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)},
+func (prox *Prox) req(reqURL string) (data string, err error) { // {{{
+	res, err := http.Get(reqURL)
+	if err != nil {
+		return data, err
 	}
-	response, err = client.Get(req_url) // do request http://example.com
-	return response, err
+
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		return data, err
+	}
+	data = string(body)
+	return data, err
 } // }}}
+
+func (prox *Prox) proxyReq(req string, proxy string) (res *http.Response, err error) {
+	timeout := time.Duration(1 * time.Second)
+	proxyURL, err := url.Parse("http://" + proxy)
+	reqURL, err := url.Parse(req)
+
+	transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+	client := &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}
+
+	res, err = client.Get(reqURL.String())
+	return res, err
+}
 
 func main() {
 	// settings

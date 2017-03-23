@@ -47,7 +47,7 @@ func _TestWriteTProx(t *testing.T) { // {{{
 
 } // }}}
 
-func TestSynProx(t *testing.T) {
+func _TestSynProx(t *testing.T) { // {{{
 	prox := Prox{
 		tlist: make([]*string, 0),
 	}
@@ -64,4 +64,29 @@ func TestSynProx(t *testing.T) {
 		t.Error("no tlist")
 	}
 
-}
+} // }}}
+
+func TestRequest(t *testing.T) { // {{{
+	prox := Prox{}
+
+	proxy := "52.208.118.39:3128"
+	req := "http://www.google.com"
+
+	err := prox.oneProx(proxy)
+	if err != nil {
+		t.Error("proxy not available: ", proxy)
+		return
+	}
+	_, err = prox.req(req)
+	if err != nil {
+		t.Error("request url not available: ", req)
+		return
+	}
+
+	res, err := prox.proxyReq(req, proxy)
+	if err != nil {
+		t.Error("url through proxy not available: ", err)
+		return
+	}
+	fmt.Printf("\neverything is allright, status: %v\n", res.Status)
+} // }}}
