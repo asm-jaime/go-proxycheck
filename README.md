@@ -23,9 +23,8 @@ func main() {
     TFile: "data/tprox.txt",
     Timeout = 1 * time.Second,
   }
-
-  err := prox.ReadProx()
+  prox.ReadProx()
   prox.AsynProx()  
-  err = prox.WriteTProx()
+  prox.WriteTProx()  
 }
 ```
