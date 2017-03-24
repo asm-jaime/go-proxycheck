@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	// "github.com/asm-jaime/go-proxycheck/pcheck"
-	pcheck "learn.go/ares.projects/go-proxycheck/pcheck"
+	"github.com/asm-jaime/go-proxycheck/pcheck"
+	// pcheck "learn.go/ares.projects/go-proxycheck/pcheck"
 )
 
 // ========== info
