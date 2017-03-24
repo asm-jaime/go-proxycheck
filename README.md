@@ -15,16 +15,21 @@
 ```go
 package main
 
-import	"github.com/asm-jaime/go-proxycheck/pcheck"
+import(
+  "fmt"
+  "time"
+  "github.com/asm-jaime/go-proxycheck/pcheck"
+)
 
 func main() {
   prox := pcheck.Prox{
-    File: "data/prox.txt",
-    TFile: "data/tprox.txt",
-    Timeout = 1 * time.Second,
+    File: "prox.txt",
+    TFile: "tprox.txt",
+    Timeout: 1 * time.Second,
   }
-  prox.ReadProx()
-  prox.AsynProx()  
-  prox.WriteTProx()  
+  err := prox.ReadProx()
+  prox.AsynProx()
+  err = prox.WriteTProx()
+  fmt.Println(err)
 }
 ```
