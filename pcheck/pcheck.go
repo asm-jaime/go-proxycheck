@@ -15,31 +15,37 @@ import (
 
 // Prox structure for processing proxy list
 type Prox struct {
-	File  string
-	TFile string
-	List  []string
-	TList []*string
-	Urls  []string
+	File    string
+	TFile   string
+	List    []string
+	TList   []*string
+	Timeout time.Duration
 	sync.RWMutex
 }
-
-// ========== configs
-
-func (prox *Prox) SetDefault() { // {{{
-	prox.File = "data/prox.txt"
-	prox.TFile = "data/tprox.txt"
-
-} // }}}
 
 // ========== file operations
 
 func (prox *Prox) ReadProx() (err error) { // {{{
+	prox.Lock()
+	defer prox.Unlock()
+
+	_, err = os.Stat(prox.File)
+	if os.IsNotExist(err) {
+		return errors.New(prox.File + " does not exist")
+	}
+
 	file, err := ioutil.ReadFile(prox.File)
 	if err != nil {
 		return err
 	}
+
 	text := string(file)
 	prox.List = strings.Split(text, "\r\n")
+
+	if len(prox.List) < 1 {
+		return errors.New(prox.File + " does not contain any list")
+	}
+
 	return err
 } // }}}
 
@@ -47,9 +53,9 @@ func (prox *Prox) WriteTProx() (err error) { // {{{
 	prox.Lock()
 	defer prox.Unlock()
 
-	fmt.Println("====================")
+	fmt.Println("\n====================")
 	fmt.Println("start to write reachable proxy list")
-	fmt.Println("====================")
+	fmt.Println("====================\n")
 
 	if len(prox.TList) < 1 {
 		return errors.New("empty list with available proxies")
@@ -72,7 +78,7 @@ func (prox *Prox) WriteTProx() (err error) { // {{{
 	// write proxy list to file
 	for i := range prox.TList {
 		fmt.Println(*prox.TList[i])
-		_, err = file.WriteString(string(*prox.TList[i]) + "\r\n")
+		_, err = file.WriteString(string(*prox.TList[i]) + "\n")
 		if err != nil {
 			return errors.New("can't write file")
 		}
@@ -84,7 +90,7 @@ func (prox *Prox) WriteTProx() (err error) { // {{{
 		return errors.New("can't save changes file")
 	}
 
-	fmt.Println("====================")
+	fmt.Println("\n====================")
 	fmt.Println("successful complete writing reachable proxy list!")
 	fmt.Println("====================")
 	return
@@ -92,13 +98,13 @@ func (prox *Prox) WriteTProx() (err error) { // {{{
 
 // ========== a prox
 
-func (prox *Prox) OneProx(proxy string) (err error) {
-	conn, err := net.DialTimeout("tcp", proxy, 3*time.Second)
+func (prox *Prox) OneProx(proxy string) (err error) { // {{{
+	conn, err := net.DialTimeout("tcp", proxy, prox.Timeout)
 	if err == nil {
 		defer conn.Close()
 	}
 	return err
-}
+} // }}}
 
 // ========== syn prox
 
@@ -106,12 +112,14 @@ func (prox *Prox) SynProx() { // {{{
 	prox.Lock()
 	defer prox.Unlock()
 	for i, proxy := range prox.List {
-		conn, err := net.DialTimeout("tcp", proxy, 1*time.Second)
-		fmt.Print(err)
+		conn, err := net.DialTimeout("tcp", proxy, prox.Timeout)
 		if err == nil {
+			fmt.Printf("\n %v available", proxy)
 			prox.TList = append(prox.TList, new(string))
 			prox.TList[len(prox.TList)-1] = &prox.List[i]
 			conn.Close()
+		} else {
+			fmt.Printf("\n %v not available, err: %v", proxy, err)
 		}
 	}
 } // }}}
@@ -119,20 +127,29 @@ func (prox *Prox) SynProx() { // {{{
 // ========== asyn prox
 
 func (prox *Prox) AsynProx() { // {{{
-	for i := 0; i < len(prox.List); i++ {
-		go prox.Dial(i)
+	var wg sync.WaitGroup
+	wg.Add(len(prox.List))
+
+	for i := range prox.List {
+		go prox.Dial(i, &wg)
 	}
+
+	wg.Wait()
 } // }}}
 
-func (prox *Prox) Dial(num int) { // {{{
-	prox.Lock()
-	defer prox.Unlock()
-	conn, err := net.DialTimeout("tcp", prox.List[num], 1*time.Second)
-	fmt.Print(err)
+func (prox *Prox) Dial(i int, wg *sync.WaitGroup) { // {{{
+	conn, err := net.DialTimeout("tcp", prox.List[i], prox.Timeout)
 	if err == nil {
 		defer conn.Close()
-		prox.TList = append(prox.TList, &prox.List[num])
+
+		prox.Lock()
+		prox.TList = append(prox.TList, new(string))
+		prox.TList[len(prox.TList)-1] = &prox.List[i]
+		prox.Unlock()
+	} else {
+		fmt.Printf("\n %v not available, err: %v", prox.List[i], err)
 	}
+	wg.Done()
 } // }}}
 
 // ========== requests
@@ -152,8 +169,8 @@ func (prox *Prox) Req(reqURL string) (data string, err error) { // {{{
 	return data, err
 } // }}}
 
-func (prox *Prox) ProxyReq(req string, proxy string) (res *http.Response, err error) {
-	timeout := time.Duration(1 * time.Second)
+func (prox *Prox) ProxyReq(req string, proxy string) (res *http.Response, err error) { // {{{
+	timeout := time.Duration(prox.Timeout)
 	proxyURL, err := url.Parse("http://" + proxy)
 	reqURL, err := url.Parse(req)
 
@@ -165,4 +182,4 @@ func (prox *Prox) ProxyReq(req string, proxy string) (res *http.Response, err er
 
 	res, err = client.Get(reqURL.String())
 	return res, err
-}
+} // }}}

@@ -5,11 +5,20 @@ import (
 	"testing"
 )
 
-func _TestWriteTProx(t *testing.T) { // {{{
+// ========== configs
+
+func SetDefault(prox *Prox) { // {{{
+	prox.File = "../data/test_prox.txt"
+	prox.TFile = "../data/test_tprox.txt"
+} // }}}
+
+// ========== tests
+// del prefix '_' for make test available
+
+func TestWriteTProx(t *testing.T) { // {{{
 	prox := Prox{}
 	// set test default
-	prox.File = "../data/test_tprox.txt"
-	prox.TFile = "../data/test_tprox.txt"
+	SetDefault(&prox)
 
 	proxies := []string{
 		"47.90.75.157:3128",
@@ -29,13 +38,13 @@ func _TestWriteTProx(t *testing.T) { // {{{
 		prox.TList[i] = &proxies[i]
 	}
 
-	err := prox.writeTProx()
+	err := prox.WriteTProx()
 
 	if err != nil {
 		t.Error("Expected: ", err)
 	}
 
-	err = prox.readProx()
+	err = prox.ReadProx()
 	if err != nil {
 		t.Error("Expected: ", err)
 	}
@@ -47,9 +56,9 @@ func _TestWriteTProx(t *testing.T) { // {{{
 
 } // }}}
 
-func _TestSynProx(t *testing.T) { // {{{
+func TestSynProx(t *testing.T) { // {{{
 	prox := Prox{
-		tlist: make([]*string, 0),
+		TList: make([]*string, 0),
 	}
 
 	proxies := []string{
@@ -58,10 +67,10 @@ func _TestSynProx(t *testing.T) { // {{{
 	}
 
 	prox.List = proxies
-	prox.synProx()
+	prox.SynProx()
 
 	if len(prox.TList) == 0 {
-		t.Error("no tlist")
+		t.Error("no tlist for synProx (maybe you not have connections?)")
 	}
 
 } // }}}
@@ -72,21 +81,65 @@ func TestRequest(t *testing.T) { // {{{
 	proxy := "52.208.118.39:3128"
 	req := "http://www.google.com"
 
-	err := prox.oneProx(proxy)
+	err := prox.OneProx(proxy)
 	if err != nil {
 		t.Error("proxy not available: ", proxy)
 		return
 	}
-	_, err = prox.req(req)
+	_, err = prox.Req(req)
 	if err != nil {
 		t.Error("request url not available: ", req)
 		return
 	}
 
-	res, err := prox.proxyReq(req, proxy)
+	res, err := prox.ProxyReq(req, proxy)
 	if err != nil {
 		t.Error("url through proxy not available: ", err)
 		return
 	}
 	fmt.Printf("\neverything is allright, status: %v\n", res.Status)
+} // }}}
+
+func TestAsynMainFunc(t *testing.T) { // {{{
+	prox := Prox{}
+	SetDefault(&prox)
+
+	// load proxies from file, (prox.txt as default)
+	err := prox.ReadProx()
+	if err != nil {
+		t.Error("asyn prox: ", err)
+		return
+	}
+
+	prox.AsynProx()
+
+	err = prox.WriteTProx()
+	if err != nil {
+		t.Error("write file: ", err)
+	}
+
+	var input string
+	fmt.Scanln(&input)
+} // }}}
+
+func TestSynMainFunc(t *testing.T) { // {{{
+	prox := Prox{}
+	SetDefault(&prox)
+
+	// load proxies from file, (prox.txt as default)
+	err := prox.ReadProx()
+	if err != nil {
+		t.Error("read proxies: ", err)
+		return
+	}
+
+	prox.SynProx()
+
+	err = prox.WriteTProx()
+	if err != nil {
+		t.Error("write proxies: ", err)
+	}
+
+	var input string
+	fmt.Scanln(&input)
 } // }}}
