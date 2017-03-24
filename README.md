@@ -18,11 +18,12 @@ package main
 import	"github.com/asm-jaime/go-proxycheck/pcheck"
 
 func main() {
-  prox := pcheck.Prox{}
-	prox.File = "data/prox.txt"
-	prox.TFile = "data/tprox.txt"
-	prox.Timeout = 1 * time.Second
-  
+  prox := pcheck.Prox{
+    File: "data/prox.txt",
+    TFile: "data/tprox.txt",
+    Timeout = 1 * time.Second,
+  }
+
   err := prox.ReadProx()
   prox.AsynProx()  
   err = prox.WriteTProx()
