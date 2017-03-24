@@ -12,7 +12,8 @@
 
 ### example (how to use lib)
 
-  * main.go
+  * example main.go
+  
 ```go
 package main
 
@@ -34,10 +35,9 @@ func main() {
   fmt.Println(err)
 }```
 
-  * prox.txt
+  * example prox.txt
   
-```txt
-47.90.75.157:3128
+```47.90.75.157:3128
 185.117.153.230:3129
 213.165.166.210:3128
 139.59.102.243:8080
