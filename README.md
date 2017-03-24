@@ -33,7 +33,8 @@ func main() {
   prox.AsynProx()
   err = prox.WriteTProx()
   fmt.Println(err)
-}```
+}
+```
 
   * example prox.txt
   
