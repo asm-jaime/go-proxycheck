@@ -1,4 +1,4 @@
-package main
+package pcheck
 
 import (
 	"fmt"
@@ -8,8 +8,8 @@ import (
 func _TestWriteTProx(t *testing.T) { // {{{
 	prox := Prox{}
 	// set test default
-	prox.file = "data/test_tprox.txt"
-	prox.tfile = "data/test_tprox.txt"
+	prox.File = "../data/test_tprox.txt"
+	prox.TFile = "../data/test_tprox.txt"
 
 	proxies := []string{
 		"47.90.75.157:3128",
@@ -24,9 +24,9 @@ func _TestWriteTProx(t *testing.T) { // {{{
 		"195.225.172.243:8080",
 	}
 
-	prox.tlist = make([]*string, len(proxies))
-	for i := range prox.tlist {
-		prox.tlist[i] = &proxies[i]
+	prox.TList = make([]*string, len(proxies))
+	for i := range prox.TList {
+		prox.TList[i] = &proxies[i]
 	}
 
 	err := prox.writeTProx()
@@ -40,9 +40,9 @@ func _TestWriteTProx(t *testing.T) { // {{{
 		t.Error("Expected: ", err)
 	}
 
-	if len(prox.list)-1 != len(prox.tlist) {
-		fmt.Printf("list: %v", prox.list[10])
-		t.Error("\ncount list: ", len(prox.list), ", tlist: ", len(prox.tlist))
+	if len(prox.List)-1 != len(prox.TList) {
+		fmt.Printf("list: %v", prox.List[10])
+		t.Error("\ncount list: ", len(prox.List), ", tlist: ", len(prox.TList))
 	}
 
 } // }}}
@@ -57,10 +57,10 @@ func _TestSynProx(t *testing.T) { // {{{
 		"ya.ru:80",
 	}
 
-	prox.list = proxies
+	prox.List = proxies
 	prox.synProx()
 
-	if len(prox.tlist) == 0 {
+	if len(prox.TList) == 0 {
 		t.Error("no tlist")
 	}
 

@@ -1,4 +1,4 @@
-package main
+package pcheck
 
 import (
 	"errors"
@@ -13,36 +13,37 @@ import (
 	"time"
 )
 
+// Prox structure for processing proxy list
 type Prox struct {
-	file  string
-	tfile string
-	list  []string
-	tlist []*string
-	urls  []string
+	File  string
+	TFile string
+	List  []string
+	TList []*string
+	Urls  []string
 	sync.RWMutex
 }
 
 // ========== configs
 
-func (prox *Prox) setDefault() { // {{{
-	prox.file = "data/prox.txt"
-	prox.tfile = "data/tprox.txt"
+func (prox *Prox) SetDefault() { // {{{
+	prox.File = "data/prox.txt"
+	prox.TFile = "data/tprox.txt"
 
 } // }}}
 
 // ========== file operations
 
-func (prox *Prox) readProx() (err error) { // {{{
-	file, err := ioutil.ReadFile(prox.file)
+func (prox *Prox) ReadProx() (err error) { // {{{
+	file, err := ioutil.ReadFile(prox.File)
 	if err != nil {
 		return err
 	}
 	text := string(file)
-	prox.list = strings.Split(text, "\r\n")
+	prox.List = strings.Split(text, "\r\n")
 	return err
 } // }}}
 
-func (prox *Prox) writeTProx() (err error) { // {{{
+func (prox *Prox) WriteTProx() (err error) { // {{{
 	prox.Lock()
 	defer prox.Unlock()
 
@@ -50,28 +51,28 @@ func (prox *Prox) writeTProx() (err error) { // {{{
 	fmt.Println("start to write reachable proxy list")
 	fmt.Println("====================")
 
-	if len(prox.tlist) < 1 {
+	if len(prox.TList) < 1 {
 		return errors.New("empty list with available proxies")
 	}
 
-	_, err = os.Stat(prox.tfile)
+	_, err = os.Stat(prox.TFile)
 	if os.IsExist(err) {
-		err = os.Remove(prox.tfile)
+		err = os.Remove(prox.TFile)
 		if err != nil {
 			return errors.New("delete file failed")
 		}
 	}
 
-	file, err := os.Create(prox.tfile)
+	file, err := os.Create(prox.TFile)
 	if err != nil {
 		return errors.New("can't create file")
 	}
 	defer file.Close()
 
 	// write proxy list to file
-	for i := range prox.tlist {
-		fmt.Println(*prox.tlist[i])
-		_, err = file.WriteString(string(*prox.tlist[i]) + "\r\n")
+	for i := range prox.TList {
+		fmt.Println(*prox.TList[i])
+		_, err = file.WriteString(string(*prox.TList[i]) + "\r\n")
 		if err != nil {
 			return errors.New("can't write file")
 		}
@@ -91,7 +92,7 @@ func (prox *Prox) writeTProx() (err error) { // {{{
 
 // ========== a prox
 
-func (prox *Prox) oneProx(proxy string) (err error) {
+func (prox *Prox) OneProx(proxy string) (err error) {
 	conn, err := net.DialTimeout("tcp", proxy, 3*time.Second)
 	if err == nil {
 		defer conn.Close()
@@ -101,15 +102,15 @@ func (prox *Prox) oneProx(proxy string) (err error) {
 
 // ========== syn prox
 
-func (prox *Prox) synProx() { // {{{
+func (prox *Prox) SynProx() { // {{{
 	prox.Lock()
 	defer prox.Unlock()
-	for i, proxy := range prox.list {
+	for i, proxy := range prox.List {
 		conn, err := net.DialTimeout("tcp", proxy, 1*time.Second)
 		fmt.Print(err)
 		if err == nil {
-			prox.tlist = append(prox.tlist, new(string))
-			prox.tlist[len(prox.tlist)-1] = &prox.list[i]
+			prox.TList = append(prox.TList, new(string))
+			prox.TList[len(prox.TList)-1] = &prox.List[i]
 			conn.Close()
 		}
 	}
@@ -117,8 +118,8 @@ func (prox *Prox) synProx() { // {{{
 
 // ========== asyn prox
 
-func (prox *Prox) asynProx() { // {{{
-	for i := 0; i < len(prox.list); i++ {
+func (prox *Prox) AsynProx() { // {{{
+	for i := 0; i < len(prox.List); i++ {
 		go prox.Dial(i)
 	}
 } // }}}
@@ -126,17 +127,17 @@ func (prox *Prox) asynProx() { // {{{
 func (prox *Prox) Dial(num int) { // {{{
 	prox.Lock()
 	defer prox.Unlock()
-	conn, err := net.DialTimeout("tcp", prox.list[num], 1*time.Second)
+	conn, err := net.DialTimeout("tcp", prox.List[num], 1*time.Second)
 	fmt.Print(err)
 	if err == nil {
 		defer conn.Close()
-		prox.tlist = append(prox.tlist, &prox.list[num])
+		prox.TList = append(prox.TList, &prox.List[num])
 	}
 } // }}}
 
 // ========== requests
 
-func (prox *Prox) req(reqURL string) (data string, err error) { // {{{
+func (prox *Prox) Req(reqURL string) (data string, err error) { // {{{
 	res, err := http.Get(reqURL)
 	if err != nil {
 		return data, err
@@ -151,7 +152,7 @@ func (prox *Prox) req(reqURL string) (data string, err error) { // {{{
 	return data, err
 } // }}}
 
-func (prox *Prox) proxyReq(req string, proxy string) (res *http.Response, err error) {
+func (prox *Prox) ProxyReq(req string, proxy string) (res *http.Response, err error) {
 	timeout := time.Duration(1 * time.Second)
 	proxyURL, err := url.Parse("http://" + proxy)
 	reqURL, err := url.Parse(req)
@@ -164,23 +165,4 @@ func (prox *Prox) proxyReq(req string, proxy string) (res *http.Response, err er
 
 	res, err = client.Get(reqURL.String())
 	return res, err
-}
-
-func main() {
-	// settings
-	prox := Prox{}
-	prox.setDefault()
-
-	// load proxies from file, (prox.txt as default)
-	err := prox.readProx()
-	if err != nil {
-		fmt.Printf("\nerr: %v, no proxy-list\n", err)
-		return
-	}
-
-	prox.synProx()
-	fmt.Printf("\ntlist: %v\n", prox.tlist)
-
-	var input string
-	fmt.Scanln(&input)
 }
