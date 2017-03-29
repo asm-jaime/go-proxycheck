@@ -1,5 +1,5 @@
 # go-proxycheck
-  Check proxy list from a file and create file with verifies proxies.
+  Check proxy list from a file and create a file with verified proxies.
 
 ### full install
 
