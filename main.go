@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/asm-jaime/go-proxycheck/pcheck"
 	// pcheck "learn.go/ares.projects/go-proxycheck/pcheck"
@@ -37,16 +36,10 @@ func PrintInfo() { // {{{
 
 // ========== configs
 
-func SetDefault(prox *pcheck.Prox) { // {{{
-	prox.File = "data/prox.txt"
-	prox.TFile = "data/tprox.txt"
-	prox.Timeout = 1 * time.Second
-
-} // }}}
-
-func startChecker(args []string) { // {{{
+func startChecker(args []string) {
 	prox := pcheck.Prox{}
-	SetDefault(&prox)
+	File := "./data/prox.txt"
+	TFile := "./data/tprox.txt"
 
 	if len(args) > 3 ||
 		(len(args) > 1 &&
@@ -56,37 +49,35 @@ func startChecker(args []string) { // {{{
 	}
 
 	if len(args) > 1 { // set proxy file
-		prox.File = args[1]
+		File = args[1]
 	}
 	if len(args) > 2 { // set available proxy file
-		prox.TFile = args[2]
+		TFile = args[2]
 	}
 
 	// info
 	fmt.Println("---------------")
-	fmt.Println("proxies: ", prox.File)
-	fmt.Println("available proxies: ", prox.TFile)
-	fmt.Println("timeout: ", prox.Timeout)
+	fmt.Println("proxies: ", File)
+	fmt.Println("available proxies: ", TFile)
 	fmt.Println("---------------")
 
 	// load proxies from file, (prox.txt as default)
-	err := prox.ReadProx()
+	list, err := prox.ReadProx(File)
 	if err != nil {
 		fmt.Print("\nasyn prox: ", err)
 		return
 	}
 
-	prox.AsynProx()
+	tlist := prox.AsynProx(&list)
 
-	err = prox.WriteTProx()
+	err = prox.WriteTProx(TFile, &tlist)
 	if err != nil {
 		fmt.Print("\nwrite file: ", err)
 	}
 
 	var input string
 	fmt.Scanln(&input)
-
-} // }}}
+}
 
 func main() {
 	args := os.Args

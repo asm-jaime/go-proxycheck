@@ -15,8 +15,6 @@ import (
 
 // Prox structure for processing proxy list
 type Prox struct {
-	File    string
-	TFile   string
 	List    []string
 	TList   []*string
 	Timeout time.Duration
@@ -28,7 +26,7 @@ type Prox struct {
 func (prox *Prox) ReadProx(rfile string) (list []string, err error) { // {{{
 	_, err = os.Stat(rfile)
 	if os.IsNotExist(err) {
-		return errors.New(rfile + " does not exist")
+		return list, errors.New(rfile + " does not exist")
 	}
 
 	file, err := ioutil.ReadFile(rfile)
@@ -46,12 +44,12 @@ func (prox *Prox) ReadProx(rfile string) (list []string, err error) { // {{{
 	return list, err
 } // }}}
 
-func (prox *Prox) WriteTProx(wfile string, list *[]string) (err error) { // {{{
+func (prox *Prox) WriteTProx(wfile string, tlist *[]string) (err error) { // {{{
 	fmt.Println("====================")
 	fmt.Println("start to write reachable proxy list")
 	fmt.Println("====================")
 
-	if len(list) < 1 {
+	if len(*tlist) < 1 {
 		return errors.New("empty list with available proxies")
 	}
 
@@ -70,7 +68,7 @@ func (prox *Prox) WriteTProx(wfile string, list *[]string) (err error) { // {{{
 	defer file.Close()
 
 	// write proxy list to file
-	for _, proxy := range *list {
+	for _, proxy := range *tlist {
 		fmt.Println(proxy)
 		_, err = file.WriteString(string(proxy) + "\n")
 		if err != nil {
@@ -102,51 +100,50 @@ func (prox *Prox) OneProx(proxy string) (err error) { // {{{
 
 // ========== syn prox
 
-func (prox *Prox) SynProx() { // {{{
-	prox.Lock()
-	defer prox.Unlock()
-	for i, proxy := range prox.List {
+func (prox *Prox) SynProx(list *[]string) (tlist []string) { // {{{
+	for _, proxy := range *list {
 		conn, err := net.DialTimeout("tcp", proxy, prox.Timeout)
 		if err == nil {
+			defer conn.Close()
 			fmt.Printf("\n %v available", proxy)
-			prox.TList = append(prox.TList, new(string))
-			prox.TList[len(prox.TList)-1] = &prox.List[i]
-			conn.Close()
+			tlist = append(tlist, proxy)
 		} else {
 			fmt.Printf("\n %v not available, err: %v", proxy, err)
 		}
 	}
+	return tlist
 } // }}}
 
 // ========== asyn prox
 
-func (prox *Prox) AsynProx() { // {{{
-	var wg sync.WaitGroup
-	wg.Add(len(prox.List))
-
-	for i := range prox.List {
-		go prox.Dial(i, &wg)
-	}
-
-	wg.Wait()
-} // }}}
-
-func (prox *Prox) Dial(i int, wg *sync.WaitGroup) { // {{{
-	conn, err := net.DialTimeout("tcp", prox.List[i], prox.Timeout)
+func (prox *Prox) worker(wg *sync.WaitGroup, cs chan string, proxy string) { // {{{
+	defer wg.Done()
+	conn, err := net.DialTimeout("tcp", proxy, 4*time.Second)
 	if err == nil {
 		defer conn.Close()
-
-		prox.Lock()
-		prox.TList = append(prox.TList, new(string))
-		prox.TList[len(prox.TList)-1] = &prox.List[i]
-		prox.Unlock()
-	} else {
-		fmt.Printf("\n %v not available, err: %v", prox.List[i], err)
+		cs <- proxy
 	}
-	wg.Done()
+}
+
+func (prox *Prox) monitor(wg *sync.WaitGroup, cs chan string) {
+	wg.Wait()
+	close(cs)
 } // }}}
 
-// ========== worker prox
+func (prox *Prox) AsynProx(list *[]string) (tlist []string) { // {{{
+	wg := &sync.WaitGroup{}
+	cs := make(chan string)
+	for _, proxy := range *list {
+		wg.Add(1)
+		go prox.worker(wg, cs, proxy)
+	}
+	go prox.monitor(wg, cs)
+
+	for i := range cs {
+		tlist = append(tlist, i)
+	}
+	return tlist
+} // }}}
 
 // ========== requests
 
