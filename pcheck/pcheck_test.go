@@ -3,6 +3,7 @@ package pcheck
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 // ========== configs
@@ -10,6 +11,7 @@ import (
 func SetDefault(prox *Prox) { // {{{
 	prox.File = "../data/test_prox.txt"
 	prox.TFile = "../data/test_tprox.txt"
+	prox.Timeout = 1 * time.Second
 } // }}}
 
 // ========== tests

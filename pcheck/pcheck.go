@@ -25,60 +25,54 @@ type Prox struct {
 
 // ========== file operations
 
-func (prox *Prox) ReadProx() (err error) { // {{{
-	prox.Lock()
-	defer prox.Unlock()
-
-	_, err = os.Stat(prox.File)
+func (prox *Prox) ReadProx(rfile string) (list []string, err error) { // {{{
+	_, err = os.Stat(rfile)
 	if os.IsNotExist(err) {
-		return errors.New(prox.File + " does not exist")
+		return errors.New(rfile + " does not exist")
 	}
 
-	file, err := ioutil.ReadFile(prox.File)
+	file, err := ioutil.ReadFile(rfile)
 	if err != nil {
-		return err
+		return list, err
 	}
 
 	text := string(file)
-	prox.List = strings.Split(text, "\r\n")
+	list = strings.Split(text, "\r\n")
 
-	if len(prox.List) < 1 {
-		return errors.New(prox.File + " does not contain any list")
+	if len(list) < 1 {
+		return list, errors.New(rfile + " does not contain any list")
 	}
 
-	return err
+	return list, err
 } // }}}
 
-func (prox *Prox) WriteTProx() (err error) { // {{{
-	prox.Lock()
-	defer prox.Unlock()
-
-	fmt.Println("\n====================")
+func (prox *Prox) WriteTProx(wfile string, list *[]string) (err error) { // {{{
+	fmt.Println("====================")
 	fmt.Println("start to write reachable proxy list")
-	fmt.Println("====================\n")
+	fmt.Println("====================")
 
-	if len(prox.TList) < 1 {
+	if len(list) < 1 {
 		return errors.New("empty list with available proxies")
 	}
 
-	_, err = os.Stat(prox.TFile)
+	_, err = os.Stat(wfile)
 	if os.IsExist(err) {
-		err = os.Remove(prox.TFile)
+		err = os.Remove(wfile)
 		if err != nil {
 			return errors.New("delete file failed")
 		}
 	}
 
-	file, err := os.Create(prox.TFile)
+	file, err := os.Create(wfile)
 	if err != nil {
 		return errors.New("can't create file")
 	}
 	defer file.Close()
 
 	// write proxy list to file
-	for i := range prox.TList {
-		fmt.Println(*prox.TList[i])
-		_, err = file.WriteString(string(*prox.TList[i]) + "\n")
+	for _, proxy := range *list {
+		fmt.Println(proxy)
+		_, err = file.WriteString(string(proxy) + "\n")
 		if err != nil {
 			return errors.New("can't write file")
 		}
@@ -151,6 +145,8 @@ func (prox *Prox) Dial(i int, wg *sync.WaitGroup) { // {{{
 	}
 	wg.Done()
 } // }}}
+
+// ========== worker prox
 
 // ========== requests
 
