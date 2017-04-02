@@ -15,9 +15,8 @@ import (
 
 // Prox structure for processing proxy list
 type Prox struct {
-	List    []string
-	TList   []*string
-	Timeout time.Duration
+	List  []string
+	TList []*string
 	sync.RWMutex
 }
 
@@ -91,7 +90,7 @@ func (prox *Prox) WriteTProx(wfile string, tlist *[]string) (err error) { // {{{
 // ========== a prox
 
 func (prox *Prox) OneProx(proxy string) (err error) { // {{{
-	conn, err := net.DialTimeout("tcp", proxy, prox.Timeout)
+	conn, err := net.DialTimeout("tcp", proxy, 1*time.Second)
 	if err == nil {
 		defer conn.Close()
 	}
@@ -102,7 +101,7 @@ func (prox *Prox) OneProx(proxy string) (err error) { // {{{
 
 func (prox *Prox) SynProx(list *[]string) (tlist []string) { // {{{
 	for _, proxy := range *list {
-		conn, err := net.DialTimeout("tcp", proxy, prox.Timeout)
+		conn, err := net.DialTimeout("tcp", proxy, 1*time.Second)
 		if err == nil {
 			defer conn.Close()
 			fmt.Printf("\n %v available", proxy)
@@ -163,7 +162,7 @@ func (prox *Prox) Req(reqURL string) (data string, err error) { // {{{
 } // }}}
 
 func (prox *Prox) ProxyReq(req string, proxy string) (res *http.Response, err error) { // {{{
-	timeout := time.Duration(prox.Timeout)
+	timeout := time.Duration(1 * time.Second)
 	proxyURL, err := url.Parse("http://" + proxy)
 	reqURL, err := url.Parse(req)
 
