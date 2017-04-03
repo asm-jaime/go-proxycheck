@@ -18,7 +18,7 @@ func PrintInfo() { // {{{
 
 	fmt.Println("=== command line params: ")
 	fmt.Println("  <file of any proxies> : file with proxy adresses, separated by new line")
-	fmt.Println("  default value: data/prox.txt")
+	fmt.Println("  default value: prox.txt")
 	fmt.Println("  file content example:")
 
 	fmt.Println("")
@@ -27,7 +27,7 @@ func PrintInfo() { // {{{
 	fmt.Println("")
 
 	fmt.Println("  <file of available proxies> : file with available/accessible proxy adresses, separated by new line")
-	fmt.Println("  default value: data/tprox.txt")
+	fmt.Println("  default value: tprox.txt")
 
 	fmt.Println("=== start program examples: ")
 	fmt.Println("  ./go-proxycheck [<file of any proxies>] [<file of available proxies>]")
@@ -38,8 +38,8 @@ func PrintInfo() { // {{{
 
 func startChecker(args []string) {
 	prox := pcheck.Prox{}
-	File := "./data/prox.txt"
-	TFile := "./data/tprox.txt"
+	File := "prox.txt"
+	TFile := "tprox.txt"
 
 	if len(args) > 3 ||
 		(len(args) > 1 &&
