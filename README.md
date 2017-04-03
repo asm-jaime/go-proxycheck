@@ -24,15 +24,20 @@ import(
 )
 
 func main() {
-  prox := pcheck.Prox{
-    File: "prox.txt",
-    TFile: "tprox.txt",
-    Timeout: 1 * time.Second,
+  File := "prox.txt"
+  TFile := "tprox.txt"
+  
+  prox := pcheck.Prox{}
+  list, err := prox.ReadProx(File)
+  if err != nil {
+    fmt.Print("\nasyn prox: ", err)
+    return
   }
-  err := prox.ReadProx()
-  prox.AsynProx()
-  err = prox.WriteTProx()
-  fmt.Println(err)
+  tlist := prox.AsynProx(&list)
+  err = prox.WriteTProx(TFile, &tlist)
+  if err != nil {
+    fmt.Print("\nwrite file: ", err)
+  }
 }
 ```
 
