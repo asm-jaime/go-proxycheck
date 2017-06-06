@@ -15,8 +15,7 @@ import (
 
 // Prox structure for processing proxy list
 type Prox struct {
-	List  []string
-	TList []*string
+	List []string
 	sync.RWMutex
 }
 
@@ -175,3 +174,52 @@ func (prox *Prox) ProxyReq(req string, proxy string) (res *http.Response, err er
 	res, err = client.Get(reqURL.String())
 	return res, err
 } // }}}
+
+// ========== easy ddos ()
+/*
+func (prox *Prox) DefProxyGet(req string, proxy string) {
+	timeout := time.Duration(1 * time.Second)
+	proxyURL, err := url.Parse("http://" + proxy)
+	reqURL, err := url.Parse(req)
+
+	transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+	client := &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}
+
+	_, _ = client.Get(reqURL.String())
+}
+
+func (prox *Prox) DefProxyPost(req string, proxy string) {
+	timeout := time.Duration(1 * time.Second)
+	proxyURL, err := url.Parse("http://" + proxy)
+	reqURL, err := url.Parse(req)
+
+	transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+	client := &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}
+
+	_, _ = client.Post(reqURL.String())
+}
+
+func (prox *Prox) worker_ddos(wg *sync.WaitGroup, cs chan string, proxy string) { // {{{
+	defer wg.Done()
+	conn, err := net.DialTimeout("tcp", proxy, 4*time.Second)
+	if err == nil {
+		defer conn.Close()
+		cs <- proxy
+	}
+}
+
+func (prox *Prox) monitor_ddos(wg *sync.WaitGroup, cs chan string) {
+	wg.Wait()
+	close(cs)
+} // }}}
+
+func (prox *Prox) AsynDdos(url string, list *[]string) (err error) {
+
+}
+*/
