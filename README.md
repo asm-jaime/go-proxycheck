@@ -1,55 +1,35 @@
 # go-proxycheck
-  Check proxy list from a file and create a file with verified proxies.
+  Check proxy list.
 
-### full install
-
-  * `git clone http://github.com/asm-jaime/go-proxycheck`
-  * `go get` inside project
-  
-### lib only install
+### install
 
   * `go get github.com/asm-jaime/go-proxycheck/pcheck`
 
 ### example (how to use lib)
 
-  * example main.go
-  
+  * cmd [/example](./example)
+  * lib example main.go
+
 ```go
 package main
 
 import(
-  "fmt"
-  "time"
-  "github.com/asm-jaime/go-proxycheck/pcheck"
+  "log"
+  "github.com/asm-jaime/go-proxycheck"
 )
 
 func main() {
-  File := "prox.txt"
-  TFile := "tprox.txt"
-  
-  prox := pcheck.Prox{}
-  list, err := prox.ReadProx(File)
-  if err != nil {
-    fmt.Print("\nasyn prox: ", err)
-    return
+  var proxs = []string{
+    "118.97.153.250:53281",
+    "200.52.144.77:8080",
+    "202.51.106.195:8080",
+    "93.77.14.13:32410",
+    "190.214.13.90:21776",
   }
-  tlist := prox.AsynProx(&list)
-  err = prox.WriteTProx(TFile, &tlist)
-  if err != nil {
-    fmt.Print("\nwrite file: ", err)
-  }
-}
-```
 
-  * example prox.txt
-  
-```
-47.90.75.157:3128
-185.117.153.230:3129
-213.165.166.210:3128
-139.59.102.243:8080
-192.99.159.91:8080
-83.171.108.210:8081
+  list := pcheck.ProxyCheck(proxs)
+  log.Println(list)
+}
 ```
 
 I'm available to provide any information, suggestion or contribution!
