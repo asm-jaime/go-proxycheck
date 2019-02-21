@@ -5,17 +5,13 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 )
 
 // ProxyCheck post any proxies and return list of available proxies
 func ProxyCheck(list []string) (tlist []string) {
-	wg := &sync.WaitGroup{}
 	c := make(chan string)
-
 	for _, prox := range list {
-		wg.Add(1)
 		go func(prox string) {
 			conn, err := net.DialTimeout("tcp", prox, 10*time.Second)
 			if err == nil {
@@ -23,16 +19,17 @@ func ProxyCheck(list []string) (tlist []string) {
 				c <- prox
 			} else {
 				log.Println(err)
+				c <- ""
 			}
-			wg.Done()
 		}(prox)
 	}
-	go func() {
-		for i := range c {
-			tlist = append(tlist, i)
+
+	for i := 0; i < len(list); i++ {
+		res := <-c
+		if res != "" {
+			tlist = append(tlist, res)
 		}
-	}()
-	wg.Wait()
+	}
 
 	return tlist
 }
